@@ -13,6 +13,7 @@ public class GhostParent : MonoBehaviour {
     [SerializeField]
     private GameObject ghost;
 
+    //初期出現座標
     [SerializeField]
     private GameObject startPoint;
 
@@ -31,7 +32,7 @@ public class GhostParent : MonoBehaviour {
     public GameObject[] ghostObj = new GameObject[100];
 
     //ゴーストのデータ
-    public GhostData[] ghostData = new GhostData[100];
+    private GhostData[] ghostData = new GhostData[100];
 
     //動きを保存するフラグ
     private bool isReplay;
@@ -40,21 +41,24 @@ public class GhostParent : MonoBehaviour {
     private bool isPlay;
 
     //プレイヤーの死亡数
-    public int death = 0;
-
-    private int i = 0;
+    private int death;
 
     //経過時間
     private float elpsedTime = 0f;
 
-    int[] hoge3;
-
     //ゴーストデータクラス
-    //[SerializeField]
-    public class GhostData
+    [System.Serializable]
+    private class GhostData
     {
         //位置のリスト
         public List<Vector3> posLists = new List<Vector3>();
+    }
+    [System.Serializable]
+    private class Ghost
+    {
+        //ゴーストオブジェクト
+        public GameObject[] ghostObj = new GameObject[100];
+        int i = 0;
     }
     // Use this for initialization
     void Start ()
@@ -65,13 +69,14 @@ public class GhostParent : MonoBehaviour {
     // Update is called once per frame
     void Update ()
     {
-        hoge3[0] = death;
         ReplaySave();
     }
 
     void Init()
     {
         animator = player.GetComponent<Animator>();
+
+        death = 0;
 
         SaveStart();
         
@@ -118,27 +123,25 @@ public class GhostParent : MonoBehaviour {
     //ゴースト再生
     public void GhostStart()
     {
-
-        SaveStop();
         Debug.Log("ゴースト始動");
 
         //ゴーストをプレイヤーの初期位置に生成
-        foreach (int hoge in hoge3)
-        {
-            ghostObj[death - 1] = Instantiate(ghost, startPoint.transform.position, Quaternion.identity);
+        ghostObj[death - 1] = Instantiate(ghost, startPoint.transform.position, Quaternion.identity);
 
-            if (ghostData[death - 1] == null)
-            {
-                Debug.Log("データがないよ");
-            }
-            else
-            {
-                isPlay = true;
-                ghostObj[death - 1].transform.position = ghostData[death - 1].posLists[0];
-                StartCoroutine(GhostPlay());
-                //ghostObj[death - 1].transform.position = ghostData[death - 1].posLists[0];
-            }
+        if (ghostData[death - 1] == null)
+        {
+            Debug.Log("データがないよ");
         }
+        else
+        {
+            isPlay = true;
+            for (int j = 0; j < death; j++)
+            {
+                ghostObj[j].transform.position = ghostData[j].posLists[0];
+            }
+            StartCoroutine(GhostPlay());
+        }
+
         for (int j = 0; j < death; j++)
         {
             ghostObj[j].SetActive(true);
@@ -151,32 +154,36 @@ public class GhostParent : MonoBehaviour {
     {
         Debug.Log("ゴースト停止");
         isPlay = false;
-        Destroy(ghostObj[death - 1]);
-        //ghostObj[death - 1].SetActive(false);
+        ghostObj[death - 1].SetActive(false);
     }
 
     IEnumerator GhostPlay()
     {
-        
+       
+        var i = 0;
 
         Debug.Log("データ数: " + ghostData[death - 1].posLists.Count);
 
         while (isPlay)
         {
-            //var i = 0;
-
             yield return new WaitForSeconds(duration);
 
-            ghostObj[death - 1].transform.position = ghostData[death - 1].posLists[i];
-            
+            for (int j = 0; j < death; j++)
+            {
+                ghostObj[j].transform.position = ghostData[j].posLists[i];
+            }
+
             i++;
 
-            //保存データ数を超えたら再生をやめる
-            if (i >= ghostData[death - 1].posLists.Count)
+            for (int j = 0; j < death; j++)
             {
-                GhostStop();
-                //ghostObj[num].transform.position = ghostData.posLists[0];
-                //i = 0;
+                //保存データ数を超えたら再生をやめる
+                if (i >= ghostData[j].posLists.Count)
+                {
+                    //ghostObj[j].GhostStop();
+                    ghostObj[j].SetActive(false);
+                    i = 0;
+                }
             }
         }
        
